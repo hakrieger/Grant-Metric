@@ -16,18 +16,24 @@ from bs4 import BeautifulSoup as bs
 import pandas as pd
 import numpy as np
 
+
 #importing NIH datafile
-df = pd.read_csv('RePORTER_PRJ_C_FY2004.csv')
-df['gnum'] = df['CORE_PROJECT_NUM'].str[3:] #parsing to get just the grant num
-df['mech'] = df['CORE_PROJECT_NUM'].str[0:3] #parsing the mechanism
+df = pd.read_csv('RePORTER_PRJ_C_FY2007.csv')
+
+#restricting to projecting ending in the year the data was downloaded:
+df['enddate'] = pd.to_datetime(df['BUDGET_END'])
+ended = df.set_index(df['enddate'])
+ended = ended.loc['2006-12-31':'2008-01-01']
+
+#outputing ended as a file
+ended.to_csv('ended2007.csv', sep = ',', index = True)
+
+ended['gnum'] = ended['CORE_PROJECT_NUM'].str[3:] #parsing to get just the grant num
+ended['mech'] = ended['CORE_PROJECT_NUM'].str[0:3] #parsing the mechanism
 
 #removing duplicate grant ID numbers
-gnum = np.unique(np.array(df.gnum))
+gnum = np.unique(np.array(ended.gnum))
 len(gnum)
-
-#gnum1 = gnum[0:27985]
-#gnum2 = gnum[27985:55970]
-#gnum3 = gnum[400:]
 
 #assigning url information
 urlmain1 = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&retmax=5000&email=heather.a.krieger@gmail.com&term="
@@ -55,7 +61,7 @@ while j < len(gnum):
     except:
         pcount.append('0')
 
-    #print(df.gnum[j], pcount[j])
+
     try:
         pmids = soup1.find_all('id')
         idar = []
@@ -70,18 +76,16 @@ while j < len(gnum):
     except:
         idarray.append('0')
         gnarray.append(gnum[j])
-#    print(gnarray, idarray)
-    #time.sleep(.001)
     j = j+1
+
 end = time.time()
 diff = end-start
 print(diff)
 
-pubcounts = pd.DataFrame({'gid' : gnum,
-                       'pubcount' : pd.Series(pcount)})
-pubcounts.to_csv('gnum2004-1.csv', sep = ',', index = False)
+#saving grant numbers and the number of publications they are listed on
+pubcounts = pd.DataFrame({'gid' : gnum, 'pubcount' : pd.Series(pcount)})
+pubcounts.to_csv('pubcount2000.csv', sep = ',', index = False)
 
-
-pmidsforcites = pd.DataFrame({'gid' : pd.Series(gnarray),
-                       'pmids' : pd.Series(idarray)})
-pmidsforcites.to_csv('gnum2004-2.csv', sep = ',', index= False)
+#saving long list of pmids to use for getting citation counts
+pmidsforcites = pd.DataFrame({'gid' : pd.Series(gnarray), 'pmids' : pd.Series(idarray)})
+pmidsforcites.to_csv('pmids2000.csv', sep = ',', index= False)
